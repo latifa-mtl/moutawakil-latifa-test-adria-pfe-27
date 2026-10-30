@@ -1,0 +1,21 @@
+type Transaction {
+    id: ID!
+    accountId: ID!
+    amount: Float!
+    currency: String!
+    merchantCategory: String
+    country: String
+    createdAt: String!
+}
+
+type Query {
+    transactions: [Transaction!]!
+    transactionById(id: ID!): Transaction
+    transactionsByAccount(accountId: ID!): [Transaction!]!
+}
+
+type Mutation {
+    createTransaction(accountId: ID!, amount: Float!, currency: String!,
+                      merchantCategory: String, country: String): Transaction!
+    transfer(sourceAccountId: ID!, targetAccountId: ID!, amount: Float!, currency: String!): Transaction!
+}
