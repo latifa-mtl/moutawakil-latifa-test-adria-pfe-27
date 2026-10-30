@@ -1,38 +1,28 @@
 package moutawakil.latifa.transactionservice.feign;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import moutawakil.latifa.transactionservice.model.Account;
-import org.springframework.cloud.openfeign.FallbackFactory;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-@FeignClient(name = "account-service",
-        fallbackFactory = AccountRestClient.Fallback.class)
+@FeignClient(name = "account-service", url = "${bank.account-service.url:}")
 public interface AccountRestClient {
 
     @GetMapping("/accounts/{id}")
+    @CircuitBreaker(name = "accountService", fallbackMethod = "getAccountFallback")
     Account getAccountById(@PathVariable("id") UUID id);
 
     @PatchMapping("/accounts/{id}/balance")
+    @CircuitBreaker(name = "accountService", fallbackMethod = "updateBalanceFallback")
     Account updateBalance(@PathVariable("id") UUID id, @RequestParam("delta") double delta);
 
-    @Component
-    class Fallback implements FallbackFactory<AccountRestClient> {
-        @Override
-        public AccountRestClient create(Throwable cause) {
-            return new AccountRestClient() {
-                @Override
-                public Account getAccountById(UUID id) {
-                    throw new RuntimeException("account-service unavailable: " + cause.getMessage());
-                }
+    default Account getAccountFallback(UUID id, Exception e) {
+        throw new RuntimeException("account-service unavailable: " + e.getMessage());
+    }
 
-                @Override
-                public Account updateBalance(UUID id, double delta) {
-                    throw new RuntimeException("account-service unavailable: " + cause.getMessage());
-                }
-            };
-        }
+    default Account updateBalanceFallback(UUID id, double delta, Exception e) {
+        throw new RuntimeException("account-service unavailable: " + e.getMessage());
     }
 }
